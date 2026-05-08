@@ -281,8 +281,6 @@ Return the 20 most recent Q&A sessions, ordered newest first.
 
 ## Screenshots
 
-> _Run `docker-compose up && docker exec rag_backend npm run seed`, open http://localhost:3002, and replace these placeholders._
-
 **Intelligence Dashboard**
 
 ![Intelligence Dashboard](docs/screenshots/dashboard.png)
