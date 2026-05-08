@@ -285,21 +285,15 @@ Return the 20 most recent Q&A sessions, ordered newest first.
 
 **Intelligence Dashboard**
 
-```
-[ screenshot: docs/screenshots/dashboard.png ]
-```
+![Intelligence Dashboard](docs/screenshots/dashboard.png)
 
 **Reasoning Steps Panel**
 
-```
-[ screenshot: docs/screenshots/reasoning-steps.png ]
-```
+![Reasoning Steps](docs/screenshots/reasoning-steps.png)
 
 **Document Ingest Form**
 
-```
-[ screenshot: docs/screenshots/ingest-form.png ]
-```
+![Document Ingest Form](docs/screenshots/ingest-form.png)
 
 ---
 
