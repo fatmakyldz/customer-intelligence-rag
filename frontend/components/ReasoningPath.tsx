@@ -3,14 +3,18 @@
 import { useState } from 'react';
 import { ReasoningStep } from '@/types';
 
+// These steps are NOT the model's hidden chain-of-thought. They are the
+// auditable tool calls the agent executed — semantic searches over the
+// facility knowledge base and the final risk classification — shown so the
+// analyst can trace exactly which evidence drove the answer.
 const actionIcons: Record<string, string> = {
   vector_search: '🔍',
-  categorize_insight: '🏷️',
+  classify_risk: '🏷️',
 };
 
 const actionLabels: Record<string, string> = {
-  vector_search: 'Semantic Search',
-  categorize_insight: 'Categorize Insight',
+  vector_search: 'Retrieved Evidence (semantic search)',
+  classify_risk: 'Risk Classification',
 };
 
 export function ReasoningPath({ steps }: { steps: ReasoningStep[] }) {
@@ -26,7 +30,7 @@ export function ReasoningPath({ steps }: { steps: ReasoningStep[] }) {
       >
         <span className="flex items-center gap-2">
           <span className="text-accent-blue">⚡</span>
-          Reasoning Path
+          Analysis Steps
           <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-gray-400">
             {steps.length} step{steps.length !== 1 ? 's' : ''}
           </span>
@@ -36,6 +40,9 @@ export function ReasoningPath({ steps }: { steps: ReasoningStep[] }) {
 
       {open && (
         <div className="border-t border-surface-3 px-4 pb-4 pt-3">
+          <p className="mb-3 text-xs text-gray-600">
+            Auditable tool calls and retrieved evidence — not the model&apos;s internal thoughts.
+          </p>
           <div className="relative">
             <div className="absolute left-4 top-0 h-full w-px bg-surface-3" />
             <div className="space-y-4">
@@ -50,13 +57,13 @@ export function ReasoningPath({ steps }: { steps: ReasoningStep[] }) {
                       <span>{actionLabels[step.action] || step.action}</span>
                     </div>
                     <div className="mb-2 text-xs text-gray-500">
-                      Input:{' '}
+                      Query:{' '}
                       <span className="text-gray-400">
                         {step.input.length > 120 ? step.input.slice(0, 120) + '…' : step.input}
                       </span>
                     </div>
                     <div className="text-xs text-gray-400">
-                      <span className="text-gray-500">Output: </span>
+                      <span className="text-gray-500">Evidence: </span>
                       {step.output.length > 200 ? step.output.slice(0, 200) + '…' : step.output}
                     </div>
                   </div>

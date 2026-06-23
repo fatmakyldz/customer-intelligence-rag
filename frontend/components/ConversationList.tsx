@@ -1,9 +1,10 @@
 import { Conversation } from '@/types';
 
 const categoryDot: Record<string, string> = {
-  opportunity: 'bg-green-400',
-  risk: 'bg-red-400',
-  neutral: 'bg-gray-500',
+  critical: 'bg-red-400',
+  warning: 'bg-amber-400',
+  normal: 'bg-green-400',
+  insight: 'bg-blue-400',
 };
 
 function timeAgo(dateStr: string) {
@@ -43,7 +44,7 @@ export function ConversationList({ conversations, onSelect, activeId }: Props) {
         >
           <div className="mb-1 flex items-center gap-2">
             <span
-              className={`h-2 w-2 shrink-0 rounded-full ${categoryDot[c.category] || categoryDot.neutral}`}
+              className={`h-2 w-2 shrink-0 rounded-full ${categoryDot[c.category] || categoryDot.normal}`}
             />
             <span className="truncate text-sm text-gray-300">{c.question}</span>
           </div>

@@ -6,130 +6,174 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const documents = [
+  // ---- SENSOR LOGS: temperature ----
   {
     content:
-      "Customer feedback from Sarah at TechCorp: The new analytics dashboard is fantastic! It's significantly reduced the time our team spends generating weekly reports. We've gone from 4 hours to 30 minutes. The real-time data refresh is a game changer. We're planning to onboard two more teams next quarter.",
-    source: 'customer_feedback',
+      'Temperature sensor log - Module MOD-DC-01, Cold Aisle A (rack row R1-R8). Readings over the last 6 hours: 22.4°C, 23.1°C, 25.8°C, 29.6°C, 33.2°C, 35.4°C. Inlet air temperature has climbed steadily and is now at 35.4°C, well above the ASHRAE A1 recommended maximum of 27°C and approaching the 35-36°C critical threshold where compute throttling and thermal shutdown begin. The rise correlates with a drop in CRAC-2 supply airflow. Hot-aisle return temperature peaked at 41°C. Immediate risk of overheating-induced server shutdown and downtime.',
+    source: 'temp_sensor_mod01_aisleA',
     metadata: {
-      type: 'feedback',
-      customer: 'Sarah',
-      company: 'TechCorp',
-      sentiment: 'positive',
-      date: '2024-01-15',
+      type: 'sensor_log',
+      module: 'MOD-DC-01',
+      metric: 'temperature_celsius',
+      latest_value: 35.4,
+      threshold_critical: 35,
+      location: 'cold_aisle_A',
+      date: '2026-06-22',
     },
   },
   {
     content:
-      "Negative feedback from James at StartupXYZ: We've been hitting API rate limits almost daily during our peak processing hours (2-4 PM EST). The 1000 requests/hour limit on the standard tier is blocking our automated sync jobs. Our engineers have had to add manual retry logic and it's creating technical debt. We're seriously evaluating whether to switch to a competitor with higher limits or move to enterprise.",
-    source: 'customer_feedback',
+      'Temperature sensor log - Module MOD-DC-02, Cold Aisle B. Stable operation. Inlet air temperature held between 21.8°C and 23.5°C across the last 24 hours. CRAC-3 and CRAC-4 supply airflow nominal. All readings within ASHRAE A1 recommended range (18-27°C). No thermal risk detected.',
+    source: 'temp_sensor_mod02_aisleB',
     metadata: {
-      type: 'feedback',
-      customer: 'James',
-      company: 'StartupXYZ',
-      sentiment: 'negative',
-      date: '2024-01-20',
-      issue: 'rate_limiting',
+      type: 'sensor_log',
+      module: 'MOD-DC-02',
+      metric: 'temperature_celsius',
+      latest_value: 22.9,
+      threshold_critical: 35,
+      location: 'cold_aisle_B',
+      date: '2026-06-22',
+    },
+  },
+  // ---- SENSOR LOGS: humidity ----
+  {
+    content:
+      'Humidity sensor log - Module MOD-DC-01, server room ambient. Relative humidity readings over the last 4 hours: 52%, 56%, 61%, 64%, 67%, 69%. Humidity has crossed the 65% upper safe limit and is now at 69% RH. Sustained humidity above 60% RH increases the risk of condensation, corrosion on connectors, and conductive anodic filament failures on PCBs. Combined with the elevated temperature in the same module, this points to a failing humidity control / cooling loop. Risk of long-term hardware damage and short-term electrical faults.',
+    source: 'humidity_sensor_mod01',
+    metadata: {
+      type: 'sensor_log',
+      module: 'MOD-DC-01',
+      metric: 'relative_humidity_percent',
+      latest_value: 69,
+      threshold_warning: 60,
+      threshold_critical: 65,
+      date: '2026-06-22',
+    },
+  },
+  // ---- UPS EVENTS ----
+  {
+    content:
+      'UPS event log - UPS-A (modular Li-ion string, Module MOD-DC-01). Self-test report: estimated battery runtime at current load (38 kW) has fallen to 17 minutes, below the 20-minute minimum required to ride through a utility outage and complete a graceful shutdown or generator start. Measured battery string capacity is 71% of rated (health "degraded"). Internal resistance on cabinet 3 is rising and two cells flagged for replacement. If utility power is lost, UPS-A may not sustain the load long enough, creating a high risk of unprotected shutdown and data loss.',
+    source: 'ups_a_selftest',
+    metadata: {
+      type: 'ups_event',
+      unit: 'UPS-A',
+      module: 'MOD-DC-01',
+      runtime_minutes: 17,
+      runtime_min_required: 20,
+      battery_health_percent: 71,
+      severity: 'critical',
+      date: '2026-06-21',
     },
   },
   {
     content:
-      "Positive support feedback from Maria at HealthPlus: When we encountered a critical data migration issue last Friday evening, the support team responded within 15 minutes and had our system back online in under 2 hours. The engineer walked us through every step. This level of support is exactly why we renewed our enterprise contract for 3 more years.",
-    source: 'customer_feedback',
+      'UPS event log - UPS-B (Module MOD-DC-02). Battery degradation trend report. Over the last 9 months measured capacity has declined from 98% to 84% of rated. Estimated runtime at current load is 26 minutes, still above the 20-minute threshold but trending down ~1.5% per month. At the current rate the string will drop below the 20-minute safe runtime in approximately 4 months. Recommend scheduling battery replacement before Q4 2026. Warning-level, not yet critical.',
+    source: 'ups_b_degradation',
     metadata: {
-      type: 'feedback',
-      customer: 'Maria',
-      company: 'HealthPlus',
-      sentiment: 'positive',
-      category: 'support',
-      date: '2024-02-01',
+      type: 'ups_event',
+      unit: 'UPS-B',
+      module: 'MOD-DC-02',
+      runtime_minutes: 26,
+      runtime_min_required: 20,
+      battery_health_percent: 84,
+      severity: 'warning',
+      date: '2026-06-20',
+    },
+  },
+  // ---- FIRE ALARM EVENTS ----
+  {
+    content:
+      'Fire alarm panel event - Panel FACP-1 (VESDA aspirating smoke detection, Module MOD-DC-01). Event type: FAULT. Detection zone Z3 (over hot aisle, rack row R5-R8) reporting "detector fault / airflow low" since 03:14. While in fault state, zone Z3 cannot reliably detect smoke, leaving part of the server room without early fire detection. The fault coincides with the elevated hot-aisle temperature in the same module. This is a fire-system failure condition: suppression release for Z3 is inhibited. Requires immediate inspection of the aspirating pipe network and detector.',
+    source: 'facp1_event_log',
+    metadata: {
+      type: 'fire_alarm_event',
+      panel: 'FACP-1',
+      module: 'MOD-DC-01',
+      event: 'fault',
+      zone: 'Z3',
+      severity: 'critical',
+      date: '2026-06-22',
     },
   },
   {
     content:
-      "Critical feedback from CTO at DataInc: We've experienced intermittent authentication failures affecting roughly 30% of our 200-person team over the past two weeks. The SSO integration with our Okta setup keeps dropping sessions every few hours. Our team is losing productivity and we've started receiving complaints from our CEO. We've submitted 3 support tickets with no resolution. We're evaluating alternatives and have a meeting with a competitor next week.",
-    source: 'customer_feedback',
+      'Fire alarm panel event - Panel FACP-2 (Module MOD-DC-02). Event type: TEST. Scheduled monthly functional test of smoke detectors and clean-agent (FM-200) release circuit completed successfully. All 4 zones responded, alarm-to-release sequence verified in test mode (no agent discharged), and the panel returned to NORMAL. Next scheduled test: 2026-07-15. No action required.',
+    source: 'facp2_event_log',
     metadata: {
-      type: 'feedback',
-      customer: 'Robert Chen',
-      company: 'DataInc',
-      sentiment: 'negative',
-      issue: 'sso_authentication',
-      date: '2024-02-10',
-      churn_risk: 'high',
+      type: 'fire_alarm_event',
+      panel: 'FACP-2',
+      module: 'MOD-DC-02',
+      event: 'test',
+      result: 'pass',
+      severity: 'normal',
+      date: '2026-06-15',
+    },
+  },
+  // ---- MAINTENANCE REPORTS ----
+  {
+    content:
+      'Maintenance report - CRAC-2 (computer room air conditioner, Module MOD-DC-01). Status: OVERDUE. Quarterly preventive maintenance (filter replacement, compressor and refrigerant check, condensate drain cleaning) was due 2026-05-15 and has been deferred for 38 days due to spare-parts backorder. Technician notes from the last visit flagged a partially clogged air filter and reduced supply airflow on CRAC-2. The delayed CRAC maintenance is the most likely root cause of the rising cold-aisle temperature and humidity in MOD-DC-01. Recommend emergency maintenance dispatch.',
+    source: 'crac2_maintenance',
+    metadata: {
+      type: 'maintenance_report',
+      asset: 'CRAC-2',
+      module: 'MOD-DC-01',
+      status: 'overdue',
+      days_overdue: 38,
+      due_date: '2026-05-15',
+      severity: 'warning',
     },
   },
   {
     content:
-      "Sales call summary - Acme Corp (500 employees, manufacturing sector): Discovery call with VP of Engineering David Park and IT Director Lisa Wong. They're looking to expand from their current 50-seat license to 200 seats company-wide. Key requirements: SSO via SAML with their Azure AD setup, SOC2 Type II compliance documentation, and dedicated customer success manager. Budget approved: $48,000/year. Current pain point is their legacy system that requires manual data exports. Timeline: want to go live by Q2 2024. Decision expected in 3 weeks. Strong buy signals throughout the call.",
-    source: 'sales_call',
+      'Maintenance report - CRAC-3 and CRAC-4 (Module MOD-DC-02). Status: COMPLETED. Quarterly preventive maintenance performed on 2026-06-10: filters replaced, refrigerant charge verified, condensate lines flushed, fan bearings inspected. Both units operating at full rated cooling capacity. Next service due 2026-09-10. No issues found.',
+    source: 'crac34_maintenance',
     metadata: {
-      type: 'sales_call',
-      company: 'Acme Corp',
-      contact: 'David Park',
-      deal_size: 48000,
-      stage: 'proposal',
-      date: '2024-01-25',
+      type: 'maintenance_report',
+      asset: 'CRAC-3,CRAC-4',
+      module: 'MOD-DC-02',
+      status: 'completed',
+      date: '2026-06-10',
+      severity: 'normal',
+    },
+  },
+  // ---- INCIDENT / DATA-LOSS RISK ----
+  {
+    content:
+      'Server room incident report INC-2026-0619 - Module MOD-DC-01, storage array SAN-1. Two disks in RAID-6 array SAN-1 (volume holding primary database and backup staging) reported SMART pre-failure alerts within 24 hours: drive bay 4 (reallocated sector count rising) and drive bay 9 (pending sectors + read errors). RAID-6 currently tolerates the loss of these two drives, but a third failure would cause array collapse and permanent data loss. The array sits in the same module experiencing overheating (35.4°C) and high humidity (69%), which accelerates disk failure. The most recent off-site backup completed 4 days ago; backup jobs have been failing since the storage warnings began. High risk of data loss.',
+    source: 'incident_inc_2026_0619',
+    metadata: {
+      type: 'maintenance_report',
+      asset: 'SAN-1',
+      module: 'MOD-DC-01',
+      incident_id: 'INC-2026-0619',
+      severity: 'critical',
+      risk: 'data_loss',
+      date: '2026-06-19',
+    },
+  },
+  // ---- FACILITY / COMPANY DOCUMENTS ----
+  {
+    content:
+      'Facility operating thresholds and SOP - MOD-DC modular edge data centers. Environmental limits: cold-aisle inlet temperature recommended 18-27°C, critical at/above 35°C (compute throttling and thermal shutdown risk). Relative humidity safe range 40-60%, warning above 60%, critical above 65%. UPS minimum battery runtime under full load: 20 minutes (to cover generator start and graceful shutdown). CRAC preventive maintenance cadence: quarterly. Fire detection (VESDA/FACP) must be functional in all zones at all times; any FAULT is treated as a critical event. Escalation: a single critical reading pages the on-call facility engineer; two concurrent critical conditions trigger the data-loss prevention runbook.',
+    source: 'facility_sop_thresholds',
+    metadata: {
+      type: 'facility_document',
+      doc: 'operating_thresholds_sop',
+      version: '3.0',
+      date: '2026-01-10',
     },
   },
   {
     content:
-      "Sales call summary - GlobalBank Financial Services: Participated in a 90-minute deep dive with their security and compliance team (5 attendees including CISO). They need: SOC2 Type II + ISO 27001 certifications, custom data residency in EU, audit log exports in SIEM-compatible format, and 99.99% uptime SLA. Currently evaluating us alongside two major competitors. They were particularly impressed by our API flexibility and custom webhook system. Budget: $120,000-180,000/year depending on configuration. Main blocker is our lack of EU data center - they need a commitment before next board meeting in 6 weeks.",
-    source: 'sales_call',
+      'Company document - MOD-DC Operations business continuity policy. The company operates modular edge data centers for customers requiring on-premise / offline AI and storage. Contractual uptime SLA is 99.98% (max ~1.6 hours downtime/year). Any event risking data loss, overheating shutdown, UPS failure, or fire-system failure must be logged and analyzed by the MOD-DC Local Intelligence Platform, with recommended actions reviewed by the facility manager. All telemetry and documents are processed locally; no facility data leaves the site (air-gapped, Ollama-based local LLM). This policy supports the patent filing for autonomous local data-center risk analysis.',
+    source: 'company_business_continuity_policy',
     metadata: {
-      type: 'sales_call',
-      company: 'GlobalBank',
-      contact: 'CISO team',
-      deal_size: 150000,
-      stage: 'evaluation',
-      date: '2024-02-05',
-      blocker: 'eu_data_residency',
-    },
-  },
-  {
-    content:
-      "Sales call summary - RetailMax (retail chain, 300 stores): Follow-up call with CEO Patricia Mills and CFO. They love the product and their pilot team of 20 gave it 9/10 satisfaction scores. However, our quote of $35,000/year is 40% higher than their current solution. Competitor X is offering a similar feature set at $22,000. Patricia said: 'If you can get within 20% of that price, we're ready to sign today.' Our AE believes a one-time discount to $28,000 for a 2-year commitment would close the deal. Need VP approval for pricing exception. Strong product fit but price is the only blocker.",
-    source: 'sales_call',
-    metadata: {
-      type: 'sales_call',
-      company: 'RetailMax',
-      contact: 'Patricia Mills',
-      deal_size: 28000,
-      stage: 'negotiation',
-      date: '2024-02-08',
-      blocker: 'pricing',
-    },
-  },
-  {
-    content:
-      "API Rate Limits Documentation: Standard tier allows 1,000 API requests per hour with a burst limit of 100 requests per minute. Professional tier allows 5,000 requests per hour. Enterprise tier allows 10,000 requests per hour with custom burst limits available. Rate limit headers (X-RateLimit-Remaining, X-RateLimit-Reset) are included in every response. When limits are exceeded, the API returns HTTP 429 with a Retry-After header. For workloads requiring higher limits, contact sales@example.com. Webhook-based integrations do not count against rate limits.",
-    source: 'documentation',
-    metadata: {
-      type: 'documentation',
-      category: 'api',
-      topic: 'rate_limits',
-      version: '2.1',
-    },
-  },
-  {
-    content:
-      "SSO Integration Guide: Our platform supports SAML 2.0 and OAuth 2.0 / OpenID Connect. For SAML 2.0 setup: obtain our Service Provider metadata URL from Settings > Security > SSO, configure your IdP (Okta, Azure AD, OneLogin supported) with our ACS URL and Entity ID, then upload the IdP metadata to complete setup. For OAuth 2.0: register a client application to receive client_id and client_secret, configure allowed redirect_uris, and implement the authorization code flow. JIT (Just-In-Time) provisioning is supported for automatic user creation on first login. SCIM 2.0 is available on Enterprise plans for automated user sync. Common troubleshooting: certificate expiry causes session drops - certificates should be rotated every 12 months.",
-    source: 'documentation',
-    metadata: {
-      type: 'documentation',
-      category: 'security',
-      topic: 'sso_integration',
-      version: '2.1',
-    },
-  },
-  {
-    content:
-      "Data Retention and Compliance Documentation: Free tier retains all data for 30 days before automatic deletion. Standard tier retains data for 1 year. Enterprise tier offers configurable retention from 1 to 7 years with legal hold capabilities. GDPR compliance: all EU customer data is stored in Frankfurt, Germany (eu-central-1). Data deletion requests are processed within 30 days per GDPR Article 17 requirements. SOC2 Type II audit is conducted annually - latest report available under NDA. ISO 27001 certification is in progress, expected Q3 2024. For regulated industries (healthcare, finance): HIPAA BAA is available for Enterprise plans. Data export available in JSON, CSV, and Parquet formats.",
-    source: 'documentation',
-    metadata: {
-      type: 'documentation',
-      category: 'compliance',
-      topic: 'data_retention',
-      version: '2.1',
+      type: 'company_document',
+      doc: 'business_continuity_policy',
+      version: '1.2',
+      date: '2026-02-01',
     },
   },
 ];

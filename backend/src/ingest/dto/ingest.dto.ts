@@ -8,8 +8,21 @@ export class IngestDto {
   @IsString()
   source: string;
 
-  @IsIn(['feedback', 'sales_call', 'documentation'])
-  type: 'feedback' | 'sales_call' | 'documentation';
+  @IsIn([
+    'sensor_log',
+    'ups_event',
+    'fire_alarm_event',
+    'maintenance_report',
+    'facility_document',
+    'company_document',
+  ])
+  type:
+    | 'sensor_log'
+    | 'ups_event'
+    | 'fire_alarm_event'
+    | 'maintenance_report'
+    | 'facility_document'
+    | 'company_document';
 
   @IsOptional()
   @IsObject()

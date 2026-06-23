@@ -3,7 +3,7 @@ version: '3.9'
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: rag_postgres
+    container_name: moddc_postgres
     environment:
       POSTGRES_DB: ragdb
       POSTGRES_USER: postgres
@@ -23,13 +23,18 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: rag_backend
+    container_name: moddc_backend
     ports:
       - '3001:3001'
     environment:
-      GROQ_API_KEY: ${GROQ_API_KEY}
+      # Ollama runs on the host machine; reach it from inside the container
+      # via host.docker.internal. Default model qwen2.5 (fallbacks: llama3.1, mistral).
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ragdb
       NODE_ENV: production
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     depends_on:
       postgres:
         condition: service_healthy
@@ -41,7 +46,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:3001
-    container_name: rag_frontend
+    container_name: moddc_frontend
     ports:
       - '3002:3000'
     environment:

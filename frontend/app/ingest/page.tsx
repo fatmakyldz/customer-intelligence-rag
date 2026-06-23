@@ -3,20 +3,31 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { DocType } from '@/types';
 
-type DocType = 'feedback' | 'sales_call' | 'documentation';
+const docTypes: DocType[] = [
+  'sensor_log',
+  'ups_event',
+  'fire_alarm_event',
+  'maintenance_report',
+  'facility_document',
+  'company_document',
+];
 
 const typeDescriptions: Record<DocType, string> = {
-  feedback: 'Customer reviews, complaints, feature requests, NPS responses',
-  sales_call: 'Call notes, discovery summaries, deal context, objections',
-  documentation: 'Product guides, API docs, FAQs, policy documents',
+  sensor_log: 'Temperature & humidity readings from server room sensors',
+  ups_event: 'UPS self-tests, battery runtime & degradation events',
+  fire_alarm_event: 'Fire panel alarms, faults, and scheduled tests',
+  maintenance_report: 'CRAC/cooling maintenance, incidents, work orders',
+  facility_document: 'Operating thresholds, SOPs, runbooks, layouts',
+  company_document: 'Policies, SLAs, business continuity documents',
 };
 
 export default function IngestPage() {
   const [content, setContent] = useState('');
   const [source, setSource] = useState('');
-  const [type, setType] = useState<DocType>('feedback');
-  const [company, setCompany] = useState('');
+  const [type, setType] = useState<DocType>('sensor_log');
+  const [module, setModule] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ id: string; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +42,7 @@ export default function IngestPage() {
 
     try {
       const metadata: Record<string, string> = { type };
-      if (company) metadata.company = company;
+      if (module) metadata.module = module;
 
       const res = await api.ingest({
         content: content.trim(),
@@ -43,7 +54,7 @@ export default function IngestPage() {
       setResult(res);
       setContent('');
       setSource('');
-      setCompany('');
+      setModule('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ingest failed');
     } finally {
@@ -67,26 +78,27 @@ export default function IngestPage() {
             <span className="text-sm font-medium text-white">Add Documents</span>
           </div>
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-blue text-sm font-bold text-white">
-            CI
+            DC
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-2xl px-6 py-8">
         <div className="mb-8">
-          <h1 className="mb-1 text-2xl font-semibold text-white">Add Document</h1>
+          <h1 className="mb-1 text-2xl font-semibold text-white">Add Facility Record</h1>
           <p className="text-sm text-gray-500">
-            Ingest customer feedback, sales calls, or documentation into the knowledge base.
-            The system generates an embedding and stores it for semantic search.
+            Ingest sensor logs, UPS events, fire alarm records, maintenance reports, or facility
+            documents into the local knowledge base. The system generates an embedding and stores it
+            for semantic search — fully offline.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Document type */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-300">Document Type</label>
-            <div className="grid grid-cols-3 gap-3">
-              {(['feedback', 'sales_call', 'documentation'] as DocType[]).map((t) => (
+            <label className="mb-2 block text-sm font-medium text-gray-300">Record Type</label>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {docTypes.map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -98,7 +110,7 @@ export default function IngestPage() {
                   }`}
                 >
                   <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
-                    {t.replace('_', ' ')}
+                    {t.replace(/_/g, ' ')}
                   </div>
                   <div className="text-xs text-gray-500">{typeDescriptions[t]}</div>
                 </button>
@@ -116,23 +128,23 @@ export default function IngestPage() {
               type="text"
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              placeholder="e.g. customer_feedback, sales_team, product_docs"
+              placeholder="e.g. temp_sensor_mod01_aisleA, ups_a_selftest, facp1_event_log"
               className="w-full rounded-lg border border-surface-3 bg-surface-1 px-4 py-2.5 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/30"
               required
             />
           </div>
 
-          {/* Company (optional) */}
+          {/* Module / location (optional) */}
           <div>
-            <label htmlFor="company" className="mb-2 block text-sm font-medium text-gray-300">
-              Company / Customer <span className="text-gray-600 text-xs">(optional)</span>
+            <label htmlFor="module" className="mb-2 block text-sm font-medium text-gray-300">
+              Module / Location <span className="text-gray-600 text-xs">(optional)</span>
             </label>
             <input
-              id="company"
+              id="module"
               type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Acme Corp, GlobalBank"
+              value={module}
+              onChange={(e) => setModule(e.target.value)}
+              placeholder="e.g. MOD-DC-01, Cold Aisle A"
               className="w-full rounded-lg border border-surface-3 bg-surface-1 px-4 py-2.5 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/30"
             />
           </div>

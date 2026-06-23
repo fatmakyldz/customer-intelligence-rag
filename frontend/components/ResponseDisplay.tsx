@@ -3,25 +3,30 @@ import { ReasoningPath } from './ReasoningPath';
 import { SourceBadge } from './SourceBadge';
 
 const categoryConfig = {
-  opportunity: {
-    label: 'Opportunity',
-    color: 'bg-green-900/40 text-green-300 border-green-700',
-    icon: '📈',
-  },
-  risk: {
-    label: 'Risk',
+  critical: {
+    label: 'Critical',
     color: 'bg-red-900/40 text-red-300 border-red-700',
-    icon: '⚠️',
+    icon: '🔴',
   },
-  neutral: {
-    label: 'Neutral',
-    color: 'bg-gray-800 text-gray-300 border-gray-600',
-    icon: '➖',
+  warning: {
+    label: 'Warning',
+    color: 'bg-amber-900/40 text-amber-300 border-amber-700',
+    icon: '🟠',
+  },
+  normal: {
+    label: 'Normal',
+    color: 'bg-green-900/40 text-green-300 border-green-700',
+    icon: '🟢',
+  },
+  insight: {
+    label: 'Insight',
+    color: 'bg-blue-900/40 text-blue-300 border-blue-700',
+    icon: '💡',
   },
 };
 
 export function ResponseDisplay({ response }: { response: QueryResponse }) {
-  const cat = categoryConfig[response.category] || categoryConfig.neutral;
+  const cat = categoryConfig[response.category] || categoryConfig.normal;
 
   return (
     <div className="space-y-4">
@@ -42,7 +47,7 @@ export function ResponseDisplay({ response }: { response: QueryResponse }) {
       {response.sources && response.sources.length > 0 && (
         <div>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Sources ({response.sources.length})
+            Retrieved Sources ({response.sources.length})
           </h3>
           <div className="space-y-2">
             {response.sources.map((source, i) => (

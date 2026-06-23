@@ -10,7 +10,7 @@ import { Conversation } from './entities/conversation.entity';
 class HealthController {
   @Get()
   health() {
-    return { status: 'ok', message: 'Customer Intelligence RAG API is running' };
+    return { status: 'ok', message: 'MOD-DC Local Intelligence Platform API is running' };
   }
 }
 

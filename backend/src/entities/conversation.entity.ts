@@ -17,7 +17,7 @@ export class Conversation {
   @Column({ type: 'jsonb', default: [] })
   reasoning_steps: any[];
 
-  @Column({ type: 'varchar', length: 50, default: 'neutral' })
+  @Column({ type: 'varchar', length: 50, default: 'normal' })
   category: string;
 
   @CreateDateColumn()

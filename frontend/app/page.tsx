@@ -8,10 +8,10 @@ import { ResponseDisplay } from '@/components/ResponseDisplay';
 import { ConversationList } from '@/components/ConversationList';
 
 const EXAMPLE_QUERIES = [
-  'What are customers saying about our API rate limits?',
-  'What are the biggest sales opportunities this quarter?',
-  'Are there any churn risks I should know about?',
-  'What compliance requirements do enterprise customers need?',
+  'Is there any risk of overheating in the server rooms right now?',
+  'Are any UPS units at risk of failing during a power outage?',
+  'Is there a risk of data loss from disk or storage failures?',
+  'Are the fire alarm panels and cooling systems healthy?',
 ];
 
 export default function DashboardPage() {
@@ -80,9 +80,9 @@ export default function DashboardPage() {
         <div className="border-b border-surface-2 px-4 py-4">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-blue text-sm font-bold text-white">
-              CI
+              DC
             </div>
-            <span className="font-semibold text-white">Customer Intelligence</span>
+            <span className="font-semibold text-white">MOD-DC Local Intelligence</span>
           </div>
         </div>
 
@@ -112,12 +112,14 @@ export default function DashboardPage() {
         {/* Header */}
         <header className="flex items-center justify-between border-b border-surface-2 px-6 py-4">
           <div>
-            <h1 className="text-lg font-semibold text-white">Intelligence Dashboard</h1>
-            <p className="text-xs text-gray-500">Ask anything about your customers, sales, or docs</p>
+            <h1 className="text-lg font-semibold text-white">Facility Intelligence Dashboard</h1>
+            <p className="text-xs text-gray-500">
+              Ask about overheating, UPS, fire systems, cooling, or data-loss risk
+            </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-600">
             <span className="h-2 w-2 rounded-full bg-green-500" />
-            RAG System Active
+            Local RAG · Offline (Ollama)
           </div>
         </header>
 
@@ -136,7 +138,7 @@ export default function DashboardPage() {
                       handleSubmit(e);
                     }
                   }}
-                  placeholder="Ask about customers, sales opportunities, risks, compliance requirements…"
+                  placeholder="Ask about overheating, UPS battery runtime, fire alarm faults, cooling maintenance, or data-loss risk…"
                   className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-gray-200 placeholder-gray-600 outline-none"
                   rows={3}
                 />

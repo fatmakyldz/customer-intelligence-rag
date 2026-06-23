@@ -3,7 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ChatGroq } from '@langchain/groq';
+import { ChatOllama } from '@langchain/ollama';
 import { HuggingFaceTransformersEmbeddings } from '@langchain/community/embeddings/hf_transformers';
 import { createToolCallingAgent, AgentExecutor } from 'langchain/agents';
 import { DynamicStructuredTool } from '@langchain/core/tools';
@@ -37,7 +37,7 @@ interface SourceDoc {
 export class QueryService {
   private readonly logger = new Logger(QueryService.name);
   private readonly embeddings: HuggingFaceTransformersEmbeddings;
-  private readonly llm: ChatGroq;
+  private readonly llm: ChatOllama;
 
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
@@ -48,9 +48,11 @@ export class QueryService {
       modelName: 'Xenova/all-MiniLM-L6-v2',
     });
 
-    this.llm = new ChatGroq({
-      apiKey: process.env.GROQ_API_KEY,
-      model: 'llama-3.1-8b-instant',
+    // Fully local LLM via Ollama (offline / edge data center friendly).
+    // Default model: qwen2.5. Fallback options: llama3.1, mistral (see README).
+    this.llm = new ChatOllama({
+      baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+      model: process.env.OLLAMA_MODEL || 'qwen2.5',
       temperature: 0,
     });
   }
@@ -59,9 +61,9 @@ export class QueryService {
     const vectorSearchTool = new DynamicStructuredTool({
       name: 'vector_search',
       description:
-        'Search the knowledge base for relevant documents using semantic similarity. Use this to find customer feedback, sales call summaries, or documentation.',
+        'Search the facility knowledge base for relevant records using semantic similarity. Use this to retrieve sensor logs, UPS events, fire alarm events, maintenance reports, facility documents, and company documents.',
       schema: z.object({
-        query: z.string().describe('The search query to find relevant documents'),
+        query: z.string().describe('The search query to find relevant facility records'),
       }),
       func: async ({ query }) => {
         const vector = await this.embeddings.embedQuery(query);
@@ -102,25 +104,29 @@ export class QueryService {
     });
 
     const categorizeTool = new DynamicStructuredTool({
-      name: 'categorize_insight',
+      name: 'classify_risk',
       description:
-        'Categorize the main business insight from the analysis as opportunity, risk, or neutral. Call this after you have gathered enough information.',
+        'Classify the operational risk level of the analysis as critical, warning, normal, or insight. Call this after you have gathered enough evidence. ' +
+        'Use "critical" for imminent threats of data loss, overheating, UPS failure, fire-system failure, or downtime; ' +
+        '"warning" for degrading conditions trending toward a threshold; ' +
+        '"normal" when readings are within safe operating limits; ' +
+        '"insight" for a notable observation or optimization opportunity that is not an active risk.',
       schema: z
         .object({
-          insight: z.string().describe('The main business insight to categorize'),
+          finding: z.string().describe('The main operational finding to classify'),
           reasoning: z
             .string()
-            .describe('Why this insight is categorized as opportunity, risk, or neutral'),
+            .describe('Why this finding is classified at this risk level, referencing the evidence'),
           category: z
             .string()
-            .describe('The category: must be one of "opportunity", "risk", or "neutral"'),
+            .describe('The risk level: must be one of "critical", "warning", "normal", or "insight"'),
         })
         .passthrough(),
-      func: async ({ insight, reasoning, category }) => {
+      func: async ({ finding, reasoning, category }) => {
         const raw = String(category ?? '').toLowerCase().trim();
         const normalized =
-          ['opportunity', 'risk', 'neutral'].find((c) => raw.includes(c)) ?? 'neutral';
-        return JSON.stringify({ category: normalized, insight, reasoning });
+          ['critical', 'warning', 'normal', 'insight'].find((c) => raw.includes(c)) ?? 'normal';
+        return JSON.stringify({ category: normalized, finding, reasoning });
       },
     });
 
@@ -136,15 +142,15 @@ export class QueryService {
     const prompt = ChatPromptTemplate.fromMessages([
       [
         'system',
-        `You are a Customer Intelligence AI. Analyze business data and extract actionable insights. Always show your reasoning step by step.
+        `You are the MOD-DC Local Intelligence assistant, a data center risk analyst for modular edge data centers. You analyze server room documents, sensor logs (temperature, humidity), UPS events, fire alarm records, maintenance reports, and facility/company documents to protect uptime and prevent data loss.
 
 When answering a question:
-1. Use vector_search to find relevant information from the knowledge base
-2. Analyze the retrieved context carefully
-3. Use categorize_insight to classify the main insight as opportunity, risk, or neutral
-4. Provide a clear, specific, actionable answer
+1. Use vector_search to retrieve relevant facility records (sensor logs, UPS events, fire alarm events, maintenance reports, facility/company documents).
+2. Analyze the retrieved evidence carefully. Explicitly assess whether there is a risk of: data loss / disk failure, overheating (high temperature or humidity), UPS failure (low battery runtime or battery degradation), fire-system failure (alarm panel faults), or operational downtime.
+3. Use classify_risk to classify the overall finding as critical, warning, normal, or insight.
+4. Provide a clear, specific answer that (a) cites the retrieved sources by their source name, and (b) recommends practical, concrete remediation actions.
 
-Be data-driven, reference specific details from the retrieved documents, and highlight key patterns.`,
+Be precise and data-driven. Reference specific values from the retrieved records (temperatures, humidity %, battery runtime minutes, dates, panel IDs). Never invent readings that are not in the evidence. If the evidence is insufficient, say so.`,
       ],
       ['human', '{input}'],
       new MessagesPlaceholder('agent_scratchpad'),
@@ -183,9 +189,9 @@ Be data-driven, reference specific details from the retrieved documents, and hig
       }),
     );
 
-    let category = 'neutral';
+    let category = 'normal';
     for (const step of result.intermediateSteps || []) {
-      if (step.action?.tool === 'categorize_insight') {
+      if (step.action?.tool === 'classify_risk') {
         try {
           const parsed =
             typeof step.observation === 'string'
@@ -195,7 +201,7 @@ Be data-driven, reference specific details from the retrieved documents, and hig
             category = parsed.category;
           }
         } catch {
-          // categorize_insight output wasn't JSON — fall back to neutral
+          // classify_risk output wasn't JSON — fall back to normal
         }
       }
     }

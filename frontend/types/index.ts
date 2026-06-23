@@ -5,16 +5,25 @@ export interface ReasoningStep {
   output: string;
 }
 
+export type DocType =
+  | 'sensor_log'
+  | 'ups_event'
+  | 'fire_alarm_event'
+  | 'maintenance_report'
+  | 'facility_document'
+  | 'company_document';
+
+export type RiskCategory = 'critical' | 'warning' | 'normal' | 'insight';
+
 export interface SourceDoc {
   content: string;
   source: string;
   similarity: number;
   metadata: {
-    type?: string;
-    company?: string;
-    customer?: string;
-    sentiment?: string;
-    category?: string;
+    type?: DocType | string;
+    module?: string;
+    severity?: string;
+    metric?: string;
     [key: string]: unknown;
   };
 }
@@ -23,7 +32,7 @@ export interface QueryResponse {
   answer: string;
   reasoning_steps: ReasoningStep[];
   sources: SourceDoc[];
-  category: 'opportunity' | 'risk' | 'neutral';
+  category: RiskCategory;
 }
 
 export interface Conversation {
@@ -39,6 +48,6 @@ export interface Conversation {
 export interface IngestPayload {
   content: string;
   source: string;
-  type: 'feedback' | 'sales_call' | 'documentation';
+  type: DocType;
   metadata?: Record<string, unknown>;
 }
