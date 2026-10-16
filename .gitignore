@@ -20,3 +20,4 @@ npm-debug.log*
 
 # Docker volumes (local)
 postgres_data/
+next-env.d.ts

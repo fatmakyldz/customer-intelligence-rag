@@ -129,6 +129,7 @@ export default function DashboardPage() {
                 <textarea
                   ref={textareaRef}
                   value={question}
+                  maxLength={500}
                   onChange={(e) => setQuestion(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {

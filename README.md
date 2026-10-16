@@ -5,7 +5,7 @@
 [![NestJS](https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![LangChain](https://img.shields.io/badge/LangChain-0.3-1C3C3C?logo=langchain&logoColor=white)](https://js.langchain.com)
-[![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](https://nextjs.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![pgvector](https://img.shields.io/badge/pgvector-0.7-4169E1?logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose)
@@ -63,8 +63,8 @@
                              │
                     ┌────────▼────────┐
                     │   Groq Cloud    │
-                    │ llama-3.1-8b-   │
-                    │    instant      │
+                    │  gpt-oss-120b   │
+                    │ (configurable)  │
                     └─────────────────┘
 ```
 
@@ -120,6 +120,8 @@ Wait ~60 seconds on first build while `all-MiniLM-L6-v2` downloads inside the ba
 
 ### 3 — Seed the knowledge base
 
+The backend seeds automatically on first start when the knowledge base is empty (set `SEED_ON_EMPTY=false` to skip). To add the sample set again manually:
+
 Load 10 realistic sample documents (customer feedback, sales calls, compliance docs) and generate their embeddings:
 
 ```bash
@@ -138,6 +140,12 @@ npm run seed
 ### 4 — Open the dashboard
 
 Navigate to **http://localhost:3002** and ask your first question.
+
+---
+
+## Deploying for free
+
+Neon (Postgres + pgvector) → Hugging Face Docker Space (backend) → Vercel (frontend), all on free tiers. Step-by-step guide: **[DEPLOY.md](DEPLOY.md)**.
 
 ---
 
@@ -333,9 +341,9 @@ customer-intelligence-rag/
 
 | Layer             | Technology                                                     |
 |-------------------|----------------------------------------------------------------|
-| Frontend          | Next.js 15, TypeScript, Tailwind CSS                           |
+| Frontend          | Next.js 14, TypeScript, Tailwind CSS                           |
 | Backend           | NestJS 10, TypeScript, TypeORM 0.3                             |
-| AI / Agent        | LangChain 0.3, Groq (`llama-3.1-8b-instant`)                  |
+| AI / Agent        | LangChain 0.3, Groq (`openai/gpt-oss-120b` by default, set `GROQ_MODEL` to change) |
 | Embeddings        | HuggingFace `all-MiniLM-L6-v2` via `@xenova/transformers` — runs locally, no API key required |
 | Vector store      | PostgreSQL 16 + pgvector (`ivfflat` index, cosine similarity)  |
 | Containerisation  | Docker Compose                                                 |

@@ -4,29 +4,32 @@ import { DataSource } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatGroq } from '@langchain/groq';
-import { HuggingFaceTransformersEmbeddings } from '@langchain/community/embeddings/hf_transformers';
 import { createToolCallingAgent, AgentExecutor } from 'langchain/agents';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 import { z } from 'zod';
 import { Conversation } from '../entities/conversation.entity';
 import { QueryDto } from './dto/query.dto';
+import { EmbeddingsService } from '../embeddings/embeddings.service';
 
-interface QueryResult {
+// Groq free tier. Override with GROQ_MODEL (e.g. llama-3.3-70b-versatile, llama-3.1-8b-instant).
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
+
+export interface QueryResult {
   answer: string;
   reasoning_steps: ReasoningStep[];
   sources: SourceDoc[];
   category: string;
 }
 
-interface ReasoningStep {
+export interface ReasoningStep {
   step: number;
   action: string;
   input: string;
   output: string;
 }
 
-interface SourceDoc {
+export interface SourceDoc {
   content: string;
   source: string;
   similarity: number;
@@ -36,22 +39,19 @@ interface SourceDoc {
 @Injectable()
 export class QueryService {
   private readonly logger = new Logger(QueryService.name);
-  private readonly embeddings: HuggingFaceTransformersEmbeddings;
   private readonly llm: ChatGroq;
 
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     @InjectRepository(Conversation)
     private readonly conversationRepo: Repository<Conversation>,
+    private readonly embeddings: EmbeddingsService,
   ) {
-    this.embeddings = new HuggingFaceTransformersEmbeddings({
-      modelName: 'Xenova/all-MiniLM-L6-v2',
-    });
-
     this.llm = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
-      model: 'llama-3.1-8b-instant',
+      model: process.env.GROQ_MODEL || DEFAULT_MODEL,
       temperature: 0,
+      maxRetries: 2,
     });
   }
 
@@ -60,12 +60,12 @@ export class QueryService {
       name: 'vector_search',
       description:
         'Search the knowledge base for relevant documents using semantic similarity. Use this to find customer feedback, sales call summaries, or documentation.',
+      // Cast keeps tsc from deep-instantiating zod generics (OOM with zod 3.25 + langchain).
       schema: z.object({
         query: z.string().describe('The search query to find relevant documents'),
-      }),
-      func: async ({ query }) => {
-        const vector = await this.embeddings.embedQuery(query);
-        const vectorStr = `[${vector.join(',')}]`;
+      }) as any,
+      func: async ({ query }: { query: string }) => {
+        const vectorStr = await this.embeddings.embedAsVectorLiteral(query);
 
         const rows = await this.dataSource.query(
           `SELECT content, metadata, source,
@@ -115,8 +115,8 @@ export class QueryService {
             .string()
             .describe('The category: must be one of "opportunity", "risk", or "neutral"'),
         })
-        .passthrough(),
-      func: async ({ insight, reasoning, category }) => {
+        .passthrough() as any,
+      func: async ({ insight, reasoning, category }: { insight: string; reasoning: string; category: string }) => {
         const raw = String(category ?? '').toLowerCase().trim();
         const normalized =
           ['opportunity', 'risk', 'neutral'].find((c) => raw.includes(c)) ?? 'neutral';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 
@@ -17,6 +17,25 @@ export default function IngestPage() {
   const [source, setSource] = useState('');
   const [type, setType] = useState<DocType>('feedback');
   const [company, setCompany] = useState('');
+  const [adminToken, setAdminToken] = useState('');
+
+  // Remember the token for this browser tab only.
+  useEffect(() => {
+    try {
+      setAdminToken(sessionStorage.getItem('ci_admin_token') || '');
+    } catch {
+      // storage unavailable
+    }
+  }, []);
+
+  function updateAdminToken(value: string) {
+    setAdminToken(value);
+    try {
+      sessionStorage.setItem('ci_admin_token', value);
+    } catch {
+      // storage unavailable
+    }
+  }
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ id: string; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +52,15 @@ export default function IngestPage() {
       const metadata: Record<string, string> = { type };
       if (company) metadata.company = company;
 
-      const res = await api.ingest({
-        content: content.trim(),
-        source: source.trim(),
-        type,
-        metadata,
-      });
+      const res = await api.ingest(
+        {
+          content: content.trim(),
+          source: source.trim(),
+          type,
+          metadata,
+        },
+        adminToken.trim() || undefined,
+      );
 
       setResult(res);
       setContent('');
@@ -151,10 +173,27 @@ export default function IngestPage() {
               className="w-full resize-none rounded-lg border border-surface-3 bg-surface-1 px-4 py-3 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/30"
               required
               minLength={10}
+              maxLength={10000}
             />
             <div className="mt-1 text-right text-xs text-gray-600">
               {content.length} characters
             </div>
+          </div>
+
+          {/* Admin token (required on the public demo) */}
+          <div>
+            <label htmlFor="adminToken" className="mb-2 block text-sm font-medium text-gray-300">
+              Admin Token <span className="text-gray-600 text-xs">(required on the live demo)</span>
+            </label>
+            <input
+              id="adminToken"
+              type="password"
+              autoComplete="off"
+              value={adminToken}
+              onChange={(e) => updateAdminToken(e.target.value)}
+              placeholder="Leave empty when running locally"
+              className="w-full rounded-lg border border-surface-3 bg-surface-1 px-4 py-2.5 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/30"
+            />
           </div>
 
           {/* Submit */}

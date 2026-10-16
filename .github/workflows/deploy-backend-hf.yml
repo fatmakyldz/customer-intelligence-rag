@@ -1,0 +1,42 @@
+name: Deploy backend to Hugging Face Space
+
+# Pushes the backend/ folder to a Docker Space whenever it changes on main.
+# Setup (once): repo Settings → Secrets and variables → Actions
+#   secret   HF_TOKEN  – a Hugging Face access token with write permission
+#   variable HF_SPACE  – the Space id, e.g. fatmakyldz/customer-intelligence-rag-api
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/deploy-backend-hf.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ vars.HF_SPACE != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Upload backend to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          pip install --quiet huggingface_hub
+          python - <<'EOF'
+          import os
+          from huggingface_hub import upload_folder
+          upload_folder(
+              repo_id=os.environ["HF_SPACE"],
+              repo_type="space",
+              folder_path="backend",
+              token=os.environ["HF_TOKEN"],
+              ignore_patterns=["node_modules/**", "dist/**", ".env", "*.tsbuildinfo"],
+              commit_message=f"Deploy {os.environ['GITHUB_SHA'][:7]}",
+          )
+          print("Uploaded to", os.environ["HF_SPACE"])
+          EOF
