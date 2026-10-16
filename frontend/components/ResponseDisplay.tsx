@@ -1,6 +1,7 @@
 import { QueryResponse } from '@/types';
 import { ReasoningPath } from './ReasoningPath';
 import { SourceBadge } from './SourceBadge';
+import { Markdown } from './Markdown';
 
 const categoryConfig = {
   opportunity: {
@@ -34,7 +35,7 @@ export function ResponseDisplay({ response }: { response: QueryResponse }) {
             {cat.icon} {cat.label}
           </span>
         </div>
-        <p className="leading-relaxed text-gray-200">{response.answer}</p>
+        <Markdown>{response.answer}</Markdown>
       </div>
 
       <ReasoningPath steps={response.reasoning_steps} />
