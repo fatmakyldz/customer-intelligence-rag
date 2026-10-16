@@ -1,25 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { HuggingFaceTransformersEmbeddings } from '@langchain/community/embeddings/hf_transformers';
+import { EmbeddingsService } from '../embeddings/embeddings.service';
 import { IngestDto } from './dto/ingest.dto';
 
 @Injectable()
 export class IngestService {
   private readonly logger = new Logger(IngestService.name);
-  private readonly embeddings: HuggingFaceTransformersEmbeddings;
 
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {
-    this.embeddings = new HuggingFaceTransformersEmbeddings({
-      modelName: 'Xenova/all-MiniLM-L6-v2',
-    });
-  }
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly embeddings: EmbeddingsService,
+  ) {}
 
   async ingest(dto: IngestDto): Promise<{ id: string; message: string }> {
     this.logger.log(`Ingesting document from source: ${dto.source}`);
 
-    const vector = await this.embeddings.embedQuery(dto.content);
-    const vectorStr = `[${vector.join(',')}]`;
+    const vectorStr = await this.embeddings.embedAsVectorLiteral(dto.content);
 
     const metadata = {
       ...dto.metadata,
